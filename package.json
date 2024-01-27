@@ -1,0 +1,16 @@
+{
+  "name": "devproject",
+  "version": "1.0.0",
+  "description": "a project on nodejs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "javascript",
+    "nodejs",
+    "mongoose"
+  ],
+  "author": "Tarun Kumar Tomar",
+  "license": "ISC"
+}
