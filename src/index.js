@@ -1,11 +1,11 @@
 // require('dotenv').config({path:"./env"})
-import dotenv from "dotenv"
+import dotenv from "dotenv";
 import connectDB from "./db/db.js";
+import { app } from "./app.js";
 // import mongoose from "mongoose";
 // import { DB_NAME } from "./constants";
 // import express from "express";
 // const app = express();
-
 
 // ;(async()=>{
 //     try {
@@ -22,6 +22,14 @@ import connectDB from "./db/db.js";
 //     }
 // })()
 dotenv.config({
-    path:"./env"
-})
-connectDB();
+  path: "./env",
+});
+connectDB()
+  .then(()=>{
+    app.listen(process.env.PORT || 8000, () => {
+        console.log(`App is running on PORT: ${process.env.PORT}`);
+      })
+  })
+  .catch((err) => {
+    console.log("App is not connecetd: ", err);
+  });
