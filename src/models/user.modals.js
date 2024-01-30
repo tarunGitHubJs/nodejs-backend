@@ -60,7 +60,7 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-// we will create our custom methods  with naem isPasswordCorrect
+// we will create our custom methods  with name isPasswordCorrect
 userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
