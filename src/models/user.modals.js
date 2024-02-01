@@ -45,7 +45,7 @@ const userSchema = new Schema(
       //   we can pass a message with required feild in an array
       required: [true, "Password is required"],
     },
-    refreshToke: {
+    refreshToken: {
       type: String,
     },
   },
