@@ -4,6 +4,7 @@ import { User } from "../models/user.modals.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import jwt from "jsonwebtoken";
+import { json } from "express";
 
 // Registering a new user.
 
@@ -89,6 +90,7 @@ const loginUser = asyncHandler(async (req, res) => {
   // const loginPassword =  await user.findOne(password);
 
   const isPsswordValid = await user?.isPasswordCorrect(password);
+
   if (!isPsswordValid) {
     throw new ApiError(401, "Invalid user credentials");
   }
@@ -119,13 +121,13 @@ const loginUser = asyncHandler(async (req, res) => {
 const userLogout = asyncHandler(async (req, res) => {
   // const user = await User.findById(req.user._id);
   // console.log(user,"user")
-  if(!(req?.user || req.user._id)){
-    throw new ApiError(401,"No user found")
+  if (!(req?.user || req.user._id)) {
+    throw new ApiError(401, "No user found");
   }
   await User.findByIdAndUpdate(
     req?.user?._id,
     {
-      $set: { refreshToken: "" }, 
+      $set: { refreshToken: "" },
     },
     { new: true }
   );
@@ -156,12 +158,8 @@ const createNewRefreshToken = asyncHandler(async (req, res) => {
     if (token !== user?.refreshToken) {
       throw new ApiError(400, "Refresh Token does not matches");
     }
-    const tokens= await getAccessTokenAndRefreshToken(
-      user._id
-    );
-    // console.log(tokens,"tokens")
-    // console.log(accessToken,"accessToken");
-    // console.log(newRefreshToken,"newRefreshToken")
+    const tokens = await getAccessTokenAndRefreshToken(user._id);
+
     const options = {
       httpOnly: true,
       secure: true,
@@ -174,7 +172,10 @@ const createNewRefreshToken = asyncHandler(async (req, res) => {
       .json(
         new ApiResponse(
           200,
-          { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken },
+          {
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+          },
           "New Access token has been generated"
         )
       );
@@ -183,4 +184,80 @@ const createNewRefreshToken = asyncHandler(async (req, res) => {
   }
 });
 
-export { registerUser, loginUser, userLogout, createNewRefreshToken };
+// update user password
+
+const updateUserPassword = asyncHandler(async (req, res) => {
+  try {
+    const user = await User.findById(req?.user._id);
+    if (!user) {
+      throw new ApiError(
+        400,
+        "Please login with your email or username to change password"
+      );
+    }
+
+    const { oldPassword, newPassword } = req.body;
+    const verifyPassword = await user?.isPasswordCorrect(oldPassword);
+    if (!verifyPassword) {
+      throw new ApiError(404, "Please enter the correct password");
+    }
+
+    if (!newPassword) {
+      throw new ApiError(401, "please enter the new password to be updated");
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json(new ApiResponse(200, {}, "password is updated"));
+  } catch (error) {
+    // console.log(error,"error")
+    throw new ApiError(400, "Invalid credentials");
+  }
+});
+
+// update avatar
+
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  try {
+    const user = await User.findById(req?.user?._id);
+    if (!user) {
+      throw new ApiError(400, "user not found");
+    }
+    const avatarLocalFilePath = req.file?.path;
+    // console.log(avatarLocalFilePath,"avatarLocalFilePath")
+    if (!avatarLocalFilePath) {
+      res.status(404).json(new ApiError(404, "Avatar file path is required"));
+      // throw new ApiError(400, "Avatar file path is required");
+    }
+    const avatarImage = await uploadOnCloudinary(avatarLocalFilePath);
+    // console.log(avatarImage,"avatarImage")
+    if (!avatarImage) {
+      res.status(404).json(new ApiError(404, "Avatar file path is required"));
+      // throw new ApiError(400, "Avatar file is required");
+    }
+    user.avatar = avatarImage?.url;
+    await user.save();
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { avatarImage: avatarImage.url },
+          "Avatar image successfully updated"
+        )
+      );
+  } catch (error) {
+    console.log(error.message);
+    throw new ApiError(400, "Invalid credentials");
+  }
+});
+
+export {
+  registerUser,
+  loginUser,
+  userLogout,
+  createNewRefreshToken,
+  updateUserPassword,
+  updateUserAvatar,
+};
