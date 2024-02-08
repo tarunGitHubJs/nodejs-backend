@@ -253,6 +253,74 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   }
 });
 
+// getting channels data
+
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+  try {
+    const { userName } = req.params;
+    console.log(req.params,"params")
+    // console.log(req?.user,"user")
+    if (!userName){
+      throw new ApiError("Please login to view channel details")
+    }
+    const channel = await User.aggregate([
+      { $match: { userName: userName } },
+      {
+        $lookup: {
+          from: "subscriptions",
+          localField: "_id",
+          foreignField: "channel",
+          as: "subscribers",
+        },
+      },
+      {
+        $lookup: {
+          from: "subscriptions",
+          localField: "_id",
+          foreignField: "channel",
+          as: "subscribedTo",
+        },
+      },
+      {
+        $addFields: {
+          subscribersCount: { $size: "$subscribers" },
+          channelSubscribedToCount: { $size: "$subscribedTo" },
+          isSubscribed: {
+            $cond: {
+              if: { $in: [req?.user?._id, "$subscribers.subscriber"] },
+              then: true,
+              else: false,
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          fullName: 1,
+          userName: 1,
+          subscribersCount: 1,
+          channelSubscribedToCount: 1,
+          isSubscribed: 1,
+          avatar: 1,
+          coverImage: 1,
+          email: 1,
+        },
+      },
+    ]);
+    if (!channel.length > 0) {
+      throw new ApiError(400, "No channel found");
+    }
+    res
+      .status(200)
+      .json(
+        new ApiResponse(200, channel[0], "Channel data fetched successfully")
+      );
+  } catch (error) {
+    console.log(error.message,"message")
+  }
+});
+// console.log(getUserChannelProfile(),"getUserChannelProfile")
+
 export {
   registerUser,
   loginUser,
@@ -260,4 +328,5 @@ export {
   createNewRefreshToken,
   updateUserPassword,
   updateUserAvatar,
+  getUserChannelProfile,
 };
