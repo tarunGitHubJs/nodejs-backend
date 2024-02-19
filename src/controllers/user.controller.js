@@ -10,6 +10,7 @@ import { json } from "express";
 
 const registerUser = asyncHandler(async (req, res) => {
   const { userName, email, fullName, password } = req.body;
+  a
 
   // conditon check if no input fields are empty
   if (
