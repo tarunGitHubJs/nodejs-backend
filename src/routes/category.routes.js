@@ -1,6 +1,31 @@
 import { Router } from "express";
-import { createCategory, createSubCategory } from "../controllers/category.controller.js";
+import {
+  addProductDetails,
+  // addProductToCart,
+  // cartproducts,
+  createCategory,
+  createProduct,
+  deleteProduct,
+  editProductDetails,
+  // createSubCategory,
+  // deleteCartProducts,
+  getCategory,
+  getProducts,
+  // getSubCategory,
+  // updateCartItems,
+} from "../controllers/category.controller.js";
+import { upload } from "../middlewares/multer.middleware.js";
 const router = Router();
-router.route("/category").post(createCategory);
-router.route("/subcategory").post(createSubCategory)
+router.route("/createcategory").post(createCategory);
+router.route("/createproduct").post(upload.single("image"),createProduct);
+router.route("/categorieslisting").get(getCategory);
+router.route("/productlisting").get(getProducts)
+router.route("/deleteproduct/:id").delete(deleteProduct);
+router.route("/addproductdetails").post(addProductDetails);
+router.route("/editproductdetails").patch(editProductDetails)
+// router.route("/subcatlisting").get(getSubCategory);
+// router.route("/cart").post(addProductToCart);
+// router.route("/cartlisting").get(cartproducts);
+// router.route("/deleteCartItems/:id").delete(deleteCartProducts)
+// router.route("/updateCartItems").get(updateCartItems)
 export default router;

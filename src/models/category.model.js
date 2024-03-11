@@ -1,40 +1,11 @@
-// import mongoose, { Schema } from "mongoose";
-
-// const subCategorySchema = new Schema({
-//   name: {
-//     type: String,
-//     required: true,
-//   },
-//   description: {
-//     type: String,
-//     required: true,
-//   },
-// });
-// const categorySchema = new Schema(
-//   {
-//     name: {
-//       type: String,
-//       required: true,
-//       unqiue: true,
-//     },
-//     description: {
-//       type: String,
-//       required: true,
-//     },
-//     subCategories: [subCategorySchema],
-//   },
-//   { timestamps: true }
-// );
-
-// export const Category = mongoose.model("Category", categorySchema);
 import mongoose, { Schema } from "mongoose";
 
-const subCategorySchema = new Schema({
+const productSchema = new Schema({
   name: {
     type: String,
     required: true,
   },
-  subCatImage: {
+  image: {
     type: String,
     required: true,
   },
@@ -42,20 +13,19 @@ const subCategorySchema = new Schema({
     total_price: { type: Number, required: true },
     discount: { type: Number, required: true },
     net_price: { type: Number, required: true },
-    rating: { type: Number, required: true },
   },
 
   tags: {
-    ISI_tag: { type: Boolean, required: true },
-    assured_tag: { type: Boolean, required: true },
+    ISI_tag: { type: String, required: true },
+    assured_tag: { type: String, required: true },
   },
-  mainCategory: {
+  category_id: {
     type: Schema.Types.ObjectId,
     ref: "Category",
   },
 });
 
-export const SubCategory = mongoose.model("SubCategory", subCategorySchema);
+export const Product = mongoose.model("Product", productSchema);
 
 const categorySchema = new Schema(
   {
@@ -64,12 +34,70 @@ const categorySchema = new Schema(
       required: true,
       unqiue: true,
     },
-    catImage: {
-      type: String,
-      required: true,
-    },
   },
   { timestamps: true }
 );
 
 export const Category = mongoose.model("Category", categorySchema);
+
+const productDetailSchema = new Schema({
+  product_id: {
+    type: Schema.Types.ObjectId,
+    ref: "Product",
+    required: true,
+    unique: true,
+  },
+  description: {
+    type: String,
+    required: true,
+  },
+  quantity: {
+    type: Number,
+    required: true,
+  },
+  quanity_unit: {
+    type: String,
+    required: true,
+  },
+  specification: [{ name: { type: String }, value: { type: String } }],
+  rating: {
+    type: Number,
+  },
+});
+
+export const ProductDetail = mongoose.model(
+  "ProductDetail",
+  productDetailSchema
+);
+
+// const cartSchema
+
+
+
+// const productCartSchema = new Schema({
+//   name: {
+//     type: String,
+//     required: true,
+//   },
+//   productImage: {
+//     type: String,
+//     required: true,
+//   },
+//   price: {
+//     total_price: { type: Number, required: true },
+//     discount: { type: Number, required: true },
+//     net_price: { type: Number, required: true },
+//     rating: { type: Number, required: true },
+//     base_price:{type:Number,required:true}
+//   },
+//   quantity:{
+//     type:Number,
+//     required:true
+//   },
+//   productId:{
+//     type:String,
+//     required:true
+//   },
+// });
+
+// export const ProductCart = mongoose.model("ProductCart", productCartSchema);
