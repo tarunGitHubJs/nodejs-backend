@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import {
+  Cart,
   Category,
   Product,
   ProductDetail,
@@ -322,34 +323,74 @@ const addProductDetails = asyncHandler(async (req, res) => {
   }
 });
 
-// const getSubCategory = asyncHandler(async (req, res) => {
-//   try {
-//     const category = decodeURIComponent(req.query.category);
-//     // console.log(decodeURIComponent(category),"category")
-//     const mainCategory = await Category.find({ name: category });
-//     if (mainCategory?.length == 0) {
-//       res.status(400).json(new ApiResponse(400, {}, "No data found"));
-//     } else {
-//       const catId = mainCategory && mainCategory?.[0]?._id;
-//       const subcatList = await SubCategory.find({ mainCategory: catId }).select(
-//         "-mainCategory"
-//       );
+const addToCart = asyncHandler(async (req, res) => {
+  try {
+    const { productId } = req.params;
+    console.log(productId,"p")
+    const existedId = await Cart.findOne({ product_id: productId });
+    console.log(existedId,"e")
+    if (existedId) {
+      console.log("id existed")
+    } else if (!existedId) {
+      const cart = await new Cart({
+        product_id: productId,
+      });
+      await cart.save();
+      res
+        .status(200)
+        .json(new ApiResponse(200, cart, "Item is added to the cart"));
+    }
+  } catch (error) {
+    console.log(error?.message);
+  }
+});
 
-//       if (subcatList?.length > 0) {
-//         res
-//           .status(200)
-//           .json(
-//             new ApiResponse(200, subcatList, "sub categories list fetched")
-//           );
-//       } else {
-//         res.status(400).json(new ApiResponse(400, {}, "No data found"));
-//       }
-//     }
-//   } catch (error) {
-//     console.log(error.message, "error");
-//     res.status(400).json(new ApiResponse(400, {}, "No data found"));
-//   }
-// });
+const cartItems = asyncHandler(async (req, res) => {
+  try {
+    const cart = await Cart.aggregate([
+      {
+        $lookup: {
+          from: "products",
+          localField: "product_id",
+          foreignField: "_id",
+          as: "cartItems",
+        },
+      },
+      {
+        $lookup: {
+          from: "productdetails",
+          localField: "product_id",
+          foreignField: "product_id",
+          as: "productdetail",
+        },
+      },
+      {
+        $unwind: "$cartItems",
+      },
+      {
+        $unwind: "$productdetail",
+      },
+      {
+        $project: {
+          _id: 1,
+          product_id:1,
+          // cartItems[_id]:-1,
+          // cartItems: 1,
+          // productdetail:1,
+          name:"$cartItems.name",
+          image:"$cartItems.image",
+          price:"$cartItems.price",
+          quantity:"$productdetail.quantity",
+
+
+        },
+      },
+    ]);
+    console.log(cart,"cart")
+  } catch (error) {
+    console.log(error?.message);
+  }
+});
 
 // const addProductToCart = asyncHandler(async (req, res) => {
 //   try {
@@ -414,68 +455,9 @@ const addProductDetails = asyncHandler(async (req, res) => {
 //   }
 // });
 
-// const cartproducts = asyncHandler(async (req, res) => {
-//   try {
-//     const cart = await ProductCart.find();
-//     res.status(200).json(new ApiResponse(200, cart, "All categories fetched"));
-//   } catch (error) {
-//     console.log(error.message);
-//   }
-// });
-// const deleteCartProducts = asyncHandler(async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const cart = await ProductCart.findByIdAndDelete(id).select(
-//       "-price -quantity -productImage -productId"
-//     );
-//     if (!cart) {
-//       res
-//         .status(400)
-//         .json(new ApiResponse(400, {}, "No product found to be deleted"));
-//     } else {
-//       res.status(200).json(new ApiResponse(200, cart, "One Item is deleted"));
-//     }
-//   } catch (error) {
-//     console.log(error.message, "error");
-//   }
-// });
 
-// const updateCartItems = asyncHandler(async (req, res) => {
-//   try {
-//     const { id, type } = req.query;
-//     console.log(req.query);
-//     const cart = await ProductCart.findById(id);
-//     console.log(cart, "cart");
-//     if (cart) {
-//       if (type === "add") {
-//         cart.quantity = cart.quantity + 1;
-//         cart.price.total_price = cart.quantity * cart.price.total_price;
-//         cart.price.net_price = cart.quantity * cart.price.net_price;
-//         await cart.save();
-//         console.log(cart,"updatedcartplus")
-//         res
-//           .status(200)
-//           .json(new ApiResponse(200, cart, "Item updated to plus one"));
-//       } else if (type === "minus") {
-//         let basePrice = cart.price
-//         cart.quantity = cart.quantity - 1;
-//         // cart.price.total_price = ;
-//         cart.price.net_price = cart.quantity * cart.price.net_price;
-//         await cart.save();
-//         console.log(cart,"updatedcartminus")
-//         res
-//           .status(200)
-//           .json(new ApiResponse(200, cart, "Item updated to minus one"));
-//       }
-//     } else {
-//       res
-//         .status(400)
-//         .json(new ApiResponse(400, {}, "No product found to be updated"));
-//     }
-//   } catch (error) {
-//     console.log(error.message, "error-message");
-//   }
-// });
+
+
 
 export {
   createCategory,
@@ -485,9 +467,6 @@ export {
   deleteProduct,
   addProductDetails,
   editProductDetails,
-  // getSubCategory,
-  // addProductToCart,
-  // cartproducts,
-  // deleteCartProducts,
-  // updateCartItems,
+  addToCart,
+  cartItems
 };

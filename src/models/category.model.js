@@ -70,9 +70,15 @@ export const ProductDetail = mongoose.model(
   productDetailSchema
 );
 
-// const cartSchema
-
-
+const cartSchema = new Schema({
+  product_id: {
+    type: Schema.Types.ObjectId,
+    ref: "Product",
+    required: true,
+  },
+  
+});
+export const Cart = mongoose.model("Cart", cartSchema);
 
 // const productCartSchema = new Schema({
 //   name: {
