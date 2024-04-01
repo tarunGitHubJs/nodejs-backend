@@ -13,6 +13,8 @@ import {
   deleteFromCloudinary,
   uploadOnCloudinary,
 } from "../utils/cloudinary.js";
+import { Email } from "../models/subscription.model.js";
+import transporter, { searchTermHighlight } from "../utils/utils.js";
 
 const createCategory = asyncHandler(async (req, res) => {
   try {
@@ -113,11 +115,25 @@ const getCategory = asyncHandler(async (req, res) => {
 
 const getProducts = asyncHandler(async (req, res) => {
   try {
-    const { category } = req.query;
+    const { category, isi_tag, assured_tag, discount } = req.query;
     const page = parseInt(req.query.page);
     const limit = parseInt(req.query.limit);
-    // console.log(req.query)
-    // console.log(category, "category");
+    let filter = {};
+
+    const product = await Product.find();
+    product?.forEach((item) => {
+      if (isi_tag != undefined) {
+        filter["tags.ISI_tag"] = isi_tag;
+      }
+      if (assured_tag != undefined) {
+        filter["tags.assured_tag"] = assured_tag;
+      }
+      if (discount != undefined) {
+        filter["price.discount"] = { $gte: parseInt(discount) };
+      }
+      return filter;
+    });
+    // console.log(filter, "filter");
     if (category == undefined) {
       const products = await Product.aggregate([
         {
@@ -128,6 +144,7 @@ const getProducts = asyncHandler(async (req, res) => {
             as: "category",
           },
         },
+
         {
           $lookup: {
             from: "productdetails",
@@ -140,11 +157,15 @@ const getProducts = asyncHandler(async (req, res) => {
           $unwind: "$category",
         },
         {
+          $match: filter,
+        },
+        {
           $unwind: {
             path: "$productdetail",
             preserveNullAndEmptyArrays: true, // Preserve unmatched products
           },
         },
+
         {
           $project: {
             _id: 1,
@@ -158,12 +179,10 @@ const getProducts = asyncHandler(async (req, res) => {
           },
         },
       ]);
+      // console.log(products, "products");
       if (page && limit) {
         const skip = (page - 1) * limit;
         const productData = products.slice(skip, skip + limit);
-        console.log(productData, "productData");
-
-        // console.log(products, "products");
 
         res
           .status(200)
@@ -218,7 +237,6 @@ const getProducts = asyncHandler(async (req, res) => {
           },
         },
       ]);
-      // console.log(productWithCategory, "productWithCategory");
       if (productWithCategory?.length > 0) {
         res
           .status(200)
@@ -271,7 +289,6 @@ const addProductDetails = asyncHandler(async (req, res) => {
       specifications,
       productId,
     } = req.body;
-    console.log(req.body, "req.body");
     if (
       !description ||
       !quantity ||
@@ -326,14 +343,26 @@ const addProductDetails = asyncHandler(async (req, res) => {
 const addToCart = asyncHandler(async (req, res) => {
   try {
     const { productId } = req.params;
-    console.log(productId,"p")
     const existedId = await Cart.findOne({ product_id: productId });
-    console.log(existedId,"e")
     if (existedId) {
-      console.log("id existed")
+      await Cart.updateOne(
+        { product_id: productId },
+        { $inc: { cart_product_quantity: 1 } }
+      );
+      const updatedCart = await Cart.findOne({ product_id: productId });
+      res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            updatedCart,
+            "Item is alreday present,quanity value updated"
+          )
+        );
     } else if (!existedId) {
       const cart = await new Cart({
         product_id: productId,
+        cart_product_quantity: 1,
       });
       await cart.save();
       res
@@ -344,6 +373,31 @@ const addToCart = asyncHandler(async (req, res) => {
     console.log(error?.message);
   }
 });
+
+const updateCartItemQuantity = asyncHandler(async (req, res) => {
+  try {
+    const { productId, quantity } = req.query;
+    const cart = await Cart.findOne({ product_id: productId });
+
+    cart.cart_product_quantity = quantity;
+    await cart.save();
+    console.log(cart, "cart");
+    res.status(200).json(new ApiResponse(200, cart, "Quantiy is updated"));
+  } catch (error) {
+    console.log(error.message, "error");
+  }
+});
+
+const deleteCartItems = asyncHandler(async (req,res)=>{
+  const {id} = req.params;
+  try {
+      const cart = await Cart.findByIdAndDelete(id);
+      res.status(200).json(new ApiResponse(200, cart, "Item is deleted"));
+      console.log(cart,"cart")
+  } catch (error) {
+    console.log(error.message,"error")
+  }
+})
 
 const cartItems = asyncHandler(async (req, res) => {
   try {
@@ -357,107 +411,67 @@ const cartItems = asyncHandler(async (req, res) => {
         },
       },
       {
-        $lookup: {
-          from: "productdetails",
-          localField: "product_id",
-          foreignField: "product_id",
-          as: "productdetail",
-        },
-      },
-      {
         $unwind: "$cartItems",
-      },
-      {
-        $unwind: "$productdetail",
       },
       {
         $project: {
           _id: 1,
-          product_id:1,
-          // cartItems[_id]:-1,
-          // cartItems: 1,
-          // productdetail:1,
-          name:"$cartItems.name",
-          image:"$cartItems.image",
-          price:"$cartItems.price",
-          quantity:"$productdetail.quantity",
-
-
+          product_id: 1,
+          cart_product_quantity: 1,
+          name: "$cartItems.name",
+          image: "$cartItems.image",
+          price: "$cartItems.price",
         },
       },
     ]);
-    console.log(cart,"cart")
+    res.status(200).json(new ApiResponse(200, cart, "Cart Listing"));
   } catch (error) {
     console.log(error?.message);
   }
 });
 
-// const addProductToCart = asyncHandler(async (req, res) => {
-//   try {
-//     const {
-//       product_name,
-//       product_image_path,
-//       product_qty,
-//       product_price_detail,
-//       product_id,
-//     } = req.body;
-//     if (
-//       !product_name ||
-//       !product_image_path ||
-//       !product_qty ||
-//       !product_price_detail
-//     ) {
-//       res
-//         .status(400)
-//         .json(new ApiResponse(400, {}, "please provide all fields"));
-//     }
-//     const existedProduct = await ProductCart.findOne({ productId: product_id });
-//     // console.log(existedProduct, "existingproduct");
-//     if (existedProduct) {
-//       existedProduct.quantity += product_qty;
-//       existedProduct.price.total_price =
-//         existedProduct.quantity * product_price_detail.totalPrice;
-//       existedProduct.price.net_price =
-//         existedProduct.quantity * product_price_detail.netPrice;
-//       await existedProduct.save();
-//       res
-//         .status(200)
-//         .json(
-//           new ApiResponse(
-//             200,
-//             existedProduct,
-//             "product is already present in the cart"
-//           )
-//         );
-//     }
+const searchProductListing = asyncHandler(async (req, res) => {
+  const query = req.query.query;
+  let filter = {};
 
-//     if (!existedProduct) {
-//       const cart = await new ProductCart({
-//         name: product_name,
-//         productImage: product_image_path,
-//         price: {
-//           total_price: product_price_detail.totalPrice,
-//           discount: product_price_detail.discount,
-//           net_price: product_price_detail.netPrice,
-//           rating: product_price_detail.rating,
-//           base_price:product_price_detail.basePrice
-//         },
-//         quantity: product_qty,
-//         productId: product_id,
-//       });
-//       // console.log(cart, "cart");
+  try {
+    if (query && query?.length >= 2) {
+      filter = {
+        $or: [
+          { name: { $regex: query, $options: "i" } }, // Case-insensitive search for name
+        ],
+      };
+      const products = (await Product.find(filter)).map((item,index) => {
+        return { search_term: item.name, show_text: searchTermHighlight(query,item.name) };
+      });
+      res.status(200).json(new ApiResponse(200, products, "Search Results"));
+      console.log(products, "products");
+    }
+  } catch (error) {
+    console.log(error.message, "error");
+  }
+});
 
-//       await cart.save();
-//       res.status(200).json(new ApiResponse(200, cart, "cart data inserted"));
-//     }
-//   } catch (error) {
-//     console.log(error.message);
-//   }
-// });
-
-
-
-
+const sendMail = asyncHandler(async (req, res) => {
+  try {
+    const { to, subject, body } = req.body;
+    const email = new Email({ to, subject, body });
+    await email.save();
+    const mailOptions = {
+      from: "taruntomar2012@gmail.com",
+      to,
+      subject,
+      text: body,
+    };
+    // console.log(mailOptions,"mailOptions")
+    await transporter.sendMail(mailOptions);
+    res
+      .status(200)
+      .json(new ApiResponse(200, mailOptions, "Mail Sent Successfully"));
+  } catch (error) {
+    console.log(error.message, "error");
+  }
+});
 
 export {
   createCategory,
@@ -468,5 +482,9 @@ export {
   addProductDetails,
   editProductDetails,
   addToCart,
-  cartItems
+  cartItems,
+  updateCartItemQuantity,
+  sendMail,
+  searchProductListing,
+  deleteCartItems
 };

@@ -6,6 +6,7 @@ import {
   registerUser,
   updateUserAvatar,
   updateUserPassword,
+  userDetail,
   userLogout,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
@@ -20,6 +21,7 @@ router.route("/register").post(
   registerUser
 );
 router.route("/login").post(loginUser);
+router.route("/userdetails").get(verifyJWT,userDetail)
 router.route("/logout").post(verifyJWT, userLogout);
 router.route("/verify-user").post(createNewRefreshToken);
 router.route("/update-password").post(verifyJWT, updateUserPassword);

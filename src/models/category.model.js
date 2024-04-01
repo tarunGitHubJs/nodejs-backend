@@ -76,34 +76,12 @@ const cartSchema = new Schema({
     ref: "Product",
     required: true,
   },
+  cart_product_quantity:{
+    type:Number,
+    required:true
+  }
   
 });
 export const Cart = mongoose.model("Cart", cartSchema);
 
-// const productCartSchema = new Schema({
-//   name: {
-//     type: String,
-//     required: true,
-//   },
-//   productImage: {
-//     type: String,
-//     required: true,
-//   },
-//   price: {
-//     total_price: { type: Number, required: true },
-//     discount: { type: Number, required: true },
-//     net_price: { type: Number, required: true },
-//     rating: { type: Number, required: true },
-//     base_price:{type:Number,required:true}
-//   },
-//   quantity:{
-//     type:Number,
-//     required:true
-//   },
-//   productId:{
-//     type:String,
-//     required:true
-//   },
-// });
 
-// export const ProductCart = mongoose.model("ProductCart", productCartSchema);

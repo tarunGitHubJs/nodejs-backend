@@ -10,7 +10,6 @@ import { json } from "express";
 
 const registerUser = asyncHandler(async (req, res) => {
   const { userName, email, fullName, password } = req.body;
-  a
 
   // conditon check if no input fields are empty
   if (
@@ -25,27 +24,27 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(409, "User is already registered");
   }
 
-  const avatarLocalFilePath = req.files?.avatar[0]?.path;
-  const coverImageLocalFilePath = req.files?.coverImage[0]?.path;
+  // const avatarLocalFilePath = req.files?.avatar[0]?.path;
+  // const coverImageLocalFilePath = req.files?.coverImage[0]?.path;
 
   //   check if avatar file is uploade or not
-  if (!avatarLocalFilePath) {
-    throw new ApiError(400, "Avatar file is required");
-  }
-  const avatarImage = await uploadOnCloudinary(avatarLocalFilePath);
-  const coverImage = await uploadOnCloudinary(coverImageLocalFilePath);
+  // if (!avatarLocalFilePath) {
+  //   throw new ApiError(400, "Avatar file is required");
+  // }
+  // const avatarImage = await uploadOnCloudinary(avatarLocalFilePath);
+  // const coverImage = await uploadOnCloudinary(coverImageLocalFilePath);
 
-  if (!avatarImage) {
-    throw new ApiError(400, "Avatar file is required");
-  }
+  // if (!avatarImage) {
+  //   throw new ApiError(400, "Avatar file is required");
+  // }
 
   const user = await User.create({
     userName: userName.toLowerCase(),
     email,
     fullName,
     password,
-    avatar: avatarImage.url,
-    coverImage: coverImage.url || "",
+    // avatar: avatarImage.url,
+    // coverImage: coverImage.url || "",
   });
 
   const createdUser = await User.findById(user._id).select(
@@ -107,7 +106,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const options = {
     httpOnly: true,
-    secure: true,
+    secure: false,
   };
 
   res
@@ -115,6 +114,28 @@ const loginUser = asyncHandler(async (req, res) => {
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
     .json(new ApiResponse(200, loggedInUser, "user is login successfully"));
+});
+
+// user details
+const userDetail = asyncHandler(async (req, res) => {
+  try {
+    const user = await User.findById(req?.user._id);
+    console.log(user, "user");
+
+    if (!user) {
+      res.status(400).json(new ApiResponse(400, {}, "No user details found"));
+    } else {
+      const user_detail = {
+        id:user?._id,
+        userName: user?.userName,
+        email: user?.email,
+        fullName: user?.fullName,
+      };
+      res.status(200).json(new ApiResponse(200, user_detail, "User detail"));
+    }
+  } catch (error) {
+    console.log(error.message, "error");
+  }
 });
 
 // user Logout
@@ -135,7 +156,7 @@ const userLogout = asyncHandler(async (req, res) => {
 
   const options = {
     httpOnly: true,
-    secure: true,
+    secure: false,
   };
 
   res
@@ -259,10 +280,10 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 const getUserChannelProfile = asyncHandler(async (req, res) => {
   try {
     const { userName } = req.params;
-    console.log(req.params,"params")
+    console.log(req.params, "params");
     // console.log(req?.user,"user")
-    if (!userName){
-      throw new ApiError("Please login to view channel details")
+    if (!userName) {
+      throw new ApiError("Please login to view channel details");
     }
     const channel = await User.aggregate([
       { $match: { userName: userName } },
@@ -317,7 +338,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         new ApiResponse(200, channel[0], "Channel data fetched successfully")
       );
   } catch (error) {
-    console.log(error.message,"message")
+    console.log(error.message, "message");
   }
 });
 // console.log(getUserChannelProfile(),"getUserChannelProfile")
@@ -325,6 +346,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 export {
   registerUser,
   loginUser,
+  userDetail,
   userLogout,
   createNewRefreshToken,
   updateUserPassword,
