@@ -96,7 +96,7 @@ const editProductDetails = asyncHandler(async (req, res) => {
       product.tags.ISI_tag = ISI_tag;
       product.tags.assured_tag = assured_tag;
       await product.save();
-      console.log(product);
+      // console.log(product);
       res.status(200).json(new ApiResponse(200, product, "Field are updated"));
     }
   } catch (error) {
@@ -301,7 +301,7 @@ const addProductDetails = asyncHandler(async (req, res) => {
       res.status(400).json(new ApiResponse(400, {}, "Product id is required"));
     } else {
       const existedId = await ProductDetail.find({ product_id: productId });
-      console.log(existedId, "existedId");
+      // console.log(existedId, "existedId");
       if (existedId[0]?.product_id == productId) {
         res
           .status(400)
@@ -323,7 +323,7 @@ const addProductDetails = asyncHandler(async (req, res) => {
           rating,
         });
         await productDetails.save();
-        console.log(productDetails, "productDetails");
+        // console.log(productDetails, "productDetails");
         res
           .status(200)
           .json(
@@ -381,7 +381,7 @@ const updateCartItemQuantity = asyncHandler(async (req, res) => {
 
     cart.cart_product_quantity = quantity;
     await cart.save();
-    console.log(cart, "cart");
+    // console.log(cart, "cart");
     res.status(200).json(new ApiResponse(200, cart, "Quantiy is updated"));
   } catch (error) {
     console.log(error.message, "error");
@@ -393,7 +393,7 @@ const deleteCartItems = asyncHandler(async (req,res)=>{
   try {
       const cart = await Cart.findByIdAndDelete(id);
       res.status(200).json(new ApiResponse(200, cart, "Item is deleted"));
-      console.log(cart,"cart")
+      // console.log(cart,"cart")
   } catch (error) {
     console.log(error.message,"error")
   }
@@ -445,7 +445,7 @@ const searchProductListing = asyncHandler(async (req, res) => {
         return { search_term: item.name, show_text: searchTermHighlight(query,item.name) };
       });
       res.status(200).json(new ApiResponse(200, products, "Search Results"));
-      console.log(products, "products");
+      // console.log(products, "products");
     }
   } catch (error) {
     console.log(error.message, "error");

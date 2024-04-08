@@ -120,7 +120,7 @@ const loginUser = asyncHandler(async (req, res) => {
 const userDetail = asyncHandler(async (req, res) => {
   try {
     const user = await User.findById(req?.user._id);
-    console.log(user, "user");
+    // console.log(user, "user");
 
     if (!user) {
       res.status(400).json(new ApiResponse(400, {}, "No user details found"));
